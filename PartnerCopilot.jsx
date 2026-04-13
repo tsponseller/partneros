@@ -1,7 +1,42 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 
-const API_KEY_STORAGE = "pc:apiKey";
-const getApiKey = () => localStorage.getItem(API_KEY_STORAGE) || "";
+const API_KEY_STORAGE  = "pc:apiKey";
+const GIST_TOKEN_KEY   = "pc:gistToken";
+const GIST_ID_KEY      = "pc:gistId";
+const GIST_FILENAME    = "partneros-data.json";
+const getApiKey    = () => localStorage.getItem(API_KEY_STORAGE) || "";
+const getGistToken = () => localStorage.getItem(GIST_TOKEN_KEY)  || "";
+const getGistId    = () => localStorage.getItem(GIST_ID_KEY)     || "";
+
+const gistHeaders = (token) => ({
+  Authorization: `Bearer ${token}`,
+  Accept: "application/vnd.github+json",
+  "Content-Type": "application/json",
+});
+const gistLoad = async (token, id) => {
+  const r = await fetch(`https://api.github.com/gists/${id}`, { headers: gistHeaders(token) });
+  if (!r.ok) throw new Error(`Load failed (${r.status})`);
+  const j = await r.json();
+  const content = j.files?.[GIST_FILENAME]?.content;
+  if (!content) throw new Error("File not found in Gist");
+  return JSON.parse(content);
+};
+const gistSave = async (token, id, data) => {
+  const r = await fetch(`https://api.github.com/gists/${id}`, {
+    method: "PATCH", headers: gistHeaders(token),
+    body: JSON.stringify({ files: { [GIST_FILENAME]: { content: JSON.stringify(data) } } }),
+  });
+  if (!r.ok) throw new Error(`Save failed (${r.status})`);
+};
+const gistCreate = async (token, data) => {
+  const r = await fetch("https://api.github.com/gists", {
+    method: "POST", headers: gistHeaders(token),
+    body: JSON.stringify({ description: "PartnerOS data sync", public: false, files: { [GIST_FILENAME]: { content: JSON.stringify(data) } } }),
+  });
+  if (!r.ok) throw new Error(`Create failed (${r.status})`);
+  const j = await r.json();
+  return j.id;
+};
 
 const MDP_TARGET = 14;
 const ACTIVE_STAGES = ["Idea", "Lead", "Proposal", "Negotiation"];
@@ -279,7 +314,7 @@ function Dots() {
   );
 }
 
-function Header({ ctx, dark, onToggleDark }) {
+function Header({ ctx, dark, onToggleDark, syncStatus, onOpenSync }) {
   const pColor = ctx.paceStatus === "BEHIND_PACE" ? BCG.red300 : ctx.paceStatus === "ON_PACE" ? BCG.orange400 : BCG.green400;
   const gap = Math.max(0, MDP_TARGET - ctx.ytdWonRaw - ctx.weightedRaw);
   const importRef = useRef(null);
@@ -318,9 +353,17 @@ function Header({ ctx, dark, onToggleDark }) {
           <div style={{ fontSize: 11, color: ctx.paceStatus === "BEHIND_PACE" ? BCG.red300 : BCG.green300, fontWeight: 600 }}>
             {ctx.paceStatus === "BEHIND_PACE" ? "⚠ Behind pace" : ctx.paceStatus === "ON_PACE" ? "→ On pace" : "✓ Ahead of pace"}
           </div>
+          {getGistToken() && (
+            <span style={{ fontSize: 10, color: syncStatus === "error" ? BCG.red300 : syncStatus === "syncing" ? BCG.orange400 : "rgba(255,255,255,0.45)", letterSpacing: "0.04em" }}>
+              {syncStatus === "syncing" ? "⟳ Syncing…" : syncStatus === "error" ? "⚠ Sync error" : "✓ Synced"}
+            </span>
+          )}
           <button onClick={exportData} style={btnStyle} title="Export all data to a file">↑ Export</button>
           <button onClick={() => importRef.current?.click()} style={btnStyle} title="Import data from a file">↓ Import</button>
           <input ref={importRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => importData(e.target.files?.[0])} />
+          <button onClick={onOpenSync} style={{ ...btnStyle, fontSize: 13 }} title={getGistToken() ? "Sync settings" : "Set up cross-device sync"}>
+            {getGistToken() ? "⟳" : "⟳?"}
+          </button>
           <button onClick={onToggleDark} style={{ ...btnStyle, fontSize: 13 }} title="Toggle dark mode">
             {dark ? "☀" : "☾"}
           </button>
@@ -1637,6 +1680,71 @@ function CoachView({ deals, contacts }) {
   );
 }
 
+function SyncSetupModal({ onClose, onSaved }) {
+  const [token, setToken] = useState(getGistToken());
+  const [testing, setTesting] = useState(false);
+  const [status, setStatus] = useState("");
+
+  const save = async () => {
+    const t = token.trim();
+    if (!t) return;
+    setTesting(true); setStatus("");
+    try {
+      // Verify token works by fetching user info
+      const r = await fetch("https://api.github.com/user", { headers: gistHeaders(t) });
+      if (!r.ok) throw new Error(`GitHub said: ${r.status} — check the token`);
+      const user = await r.json();
+      localStorage.setItem(GIST_TOKEN_KEY, t);
+      setStatus(`✓ Connected as ${user.login}`);
+      setTimeout(() => { onSaved(t); onClose(); }, 800);
+    } catch (e) {
+      setStatus(`⚠ ${e.message}`);
+    } finally { setTesting(false); }
+  };
+
+  const disconnect = () => {
+    localStorage.removeItem(GIST_TOKEN_KEY);
+    localStorage.removeItem(GIST_ID_KEY);
+    onSaved("");
+    onClose();
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ background: "var(--bg-card)", borderRadius: 12, padding: 28, width: "100%", maxWidth: 440, border: `1px solid var(--line)` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>⟳ Cross-device sync</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "var(--muted)" }}>✕</button>
+        </div>
+        <div style={{ fontSize: 13, color: "var(--sub)", lineHeight: 1.7, marginBottom: 20 }}>
+          Sync uses a <strong>private GitHub Gist</strong> as your database — your data lives in your own GitHub account and syncs automatically across all devices.
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--sub)", marginBottom: 6 }}>GitHub Personal Access Token</div>
+        <input
+          style={{ ...g.formInput, marginBottom: 8, fontSize: 12, fontFamily: "monospace" }}
+          type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          value={token} onChange={(e) => setToken(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && save()}
+        />
+        {status && <div style={{ fontSize: 12, color: status.startsWith("✓") ? BCG.green400 : BCG.red300, marginBottom: 10 }}>{status}</div>}
+        <button
+          style={{ ...g.btnBlue, width: "100%", padding: "9px 16px", fontSize: 13, opacity: testing || !token.trim() ? 0.5 : 1, marginBottom: 10 }}
+          onClick={save} disabled={testing || !token.trim()}>
+          {testing ? "Verifying…" : "Connect & enable sync →"}
+        </button>
+        {getGistToken() && <button onClick={disconnect} style={{ ...g.btn, width: "100%", fontSize: 12, color: "var(--muted)" }}>Disconnect sync</button>}
+        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 14, lineHeight: 1.7, borderTop: `1px solid var(--line)`, paddingTop: 14 }}>
+          <strong>How to get a token:</strong><br />
+          1. Go to <strong>github.com/settings/tokens</strong><br />
+          2. Click <strong>"Generate new token (classic)"</strong><br />
+          3. Give it any name, check only the <strong>"gist"</strong> scope<br />
+          4. Copy and paste the token above
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ApiKeyGate({ children }) {
   const [key, setKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) || "");
   const [input, setInput] = useState("");
@@ -1719,23 +1827,65 @@ function PartnerCopilotApp() {
   const [contacts, setContacts] = useState(null);
   const [inited, setInited] = useState(false);
   const [dark, setDark] = useState(() => localStorage.getItem("pc:dark") === "true");
+  const [syncStatus, setSyncStatus] = useState("idle"); // idle | syncing | ok | error
+  const [gistToken, setGistToken] = useState(() => getGistToken());
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const syncTimer = useRef(null);
   const toggleDark = () => setDark((d) => { const next = !d; localStorage.setItem("pc:dark", next); return next; });
 
+  // ── LOAD: try Gist first, fall back to localStorage ──────────────────────
   useEffect(() => {
     const load = async () => {
       let d, c;
-      try { const r = await window.storage.get("pc:deals"); d = JSON.parse(r.value); } catch { d = SEED_DEALS; }
-      try { const r = await window.storage.get("pc:contacts"); c = JSON.parse(r.value); } catch { c = SEED_CONTACTS; }
+      const token = getGistToken();
+      const id    = getGistId();
+      if (token && id) {
+        try {
+          setSyncStatus("syncing");
+          const remote = await gistLoad(token, id);
+          d = remote.deals;
+          c = remote.contacts;
+          // Persist locally too
+          localStorage.setItem("pc:deals",    JSON.stringify(d));
+          localStorage.setItem("pc:contacts", JSON.stringify(c));
+          setSyncStatus("ok");
+        } catch {
+          setSyncStatus("error");
+        }
+      }
+      if (!d) { try { const r = await window.storage.get("pc:deals");    d = JSON.parse(r.value); } catch { d = SEED_DEALS; } }
+      if (!c) { try { const r = await window.storage.get("pc:contacts"); c = JSON.parse(r.value); } catch { c = SEED_CONTACTS; } }
       setDeals(d); setContacts(c); setInited(true);
     };
     load();
   }, []);
 
-  useEffect(() => { if (inited && deals) window.storage.set("pc:deals", JSON.stringify(deals)).catch(() => {}); }, [deals, inited]);
+  // ── SAVE: debounced push to Gist + localStorage on every change ──────────
+  useEffect(() => {
+    if (!inited || !deals || !contacts) return;
+    window.storage.set("pc:deals", JSON.stringify(deals)).catch(() => {});
+    const token = getGistToken();
+    if (!token) return;
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(async () => {
+      setSyncStatus("syncing");
+      try {
+        let id = getGistId();
+        if (!id) {
+          // First time — auto-create the Gist
+          id = await gistCreate(token, { deals, contacts });
+          localStorage.setItem(GIST_ID_KEY, id);
+        }
+        await gistSave(token, id, { deals, contacts });
+        setSyncStatus("ok");
+      } catch { setSyncStatus("error"); }
+    }, 1500);
+  }, [deals, contacts, inited]);
+
   useEffect(() => { if (inited && contacts) window.storage.set("pc:contacts", JSON.stringify(contacts)).catch(() => {}); }, [contacts, inited]);
 
   if (!inited || !deals || !contacts) {
-    return <div style={{ padding: 40, textAlign: "center", color: "var(--sub)", fontSize: 13, background: "var(--bg-app)", minHeight: "100vh" }}>Loading Partner Copilot...</div>;
+    return <div style={{ padding: 40, textAlign: "center", color: "var(--sub)", fontSize: 13, background: "var(--bg-app)", minHeight: "100vh" }}>Loading Partner Copilot…</div>;
   }
 
   const ctx = buildCtx(deals, contacts);
@@ -1743,7 +1893,8 @@ function PartnerCopilotApp() {
   return (
     <div data-theme={dark ? "dark" : "light"} style={g.app}>
       <style>{THEME_CSS}</style>
-      <Header ctx={ctx} dark={dark} onToggleDark={toggleDark} />
+      {showSyncModal && <SyncSetupModal onClose={() => setShowSyncModal(false)} onSaved={(t) => setGistToken(t)} />}
+      <Header ctx={ctx} dark={dark} onToggleDark={toggleDark} syncStatus={syncStatus} onOpenSync={() => setShowSyncModal(true)} />
       <NavTabs view={view} setView={setView} />
       <div style={g.content}>
         {view === "pipeline" && <PipelineView deals={deals} setDeals={setDeals} ctx={ctx} />}
