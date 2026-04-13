@@ -1653,6 +1653,7 @@ function CoachView({ deals, contacts }) {
 
 function SyncSetupModal({ onClose, onSaved }) {
   const [token, setToken] = useState(getGistToken());
+  const [gistId, setGistId] = useState(getGistId());
   const [testing, setTesting] = useState(false);
   const [status, setStatus] = useState("");
 
@@ -1661,13 +1662,15 @@ function SyncSetupModal({ onClose, onSaved }) {
     if (!t) return;
     setTesting(true); setStatus("");
     try {
-      // Verify token works by fetching user info
       const r = await fetch("https://api.github.com/user", { headers: gistHeaders(t) });
       if (!r.ok) throw new Error(`GitHub said: ${r.status} — check the token`);
       const user = await r.json();
       localStorage.setItem(GIST_TOKEN_KEY, t);
+      const id = gistId.trim();
+      if (id) localStorage.setItem(GIST_ID_KEY, id);
+      else localStorage.removeItem(GIST_ID_KEY);
       setStatus(`✓ Connected as ${user.login}`);
-      setTimeout(() => { onSaved(t); onClose(); }, 800);
+      setTimeout(() => { onSaved(t); onClose(); }, 900);
     } catch (e) {
       setStatus(`⚠ ${e.message}`);
     } finally { setTesting(false); }
@@ -1680,9 +1683,12 @@ function SyncSetupModal({ onClose, onSaved }) {
     onClose();
   };
 
+  const storedId = getGistId();
+  const labelStyle = { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--sub)", marginBottom: 6 };
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ background: "var(--bg-card)", borderRadius: 12, padding: 28, width: "100%", maxWidth: 440, border: `1px solid var(--line)` }}>
+      <div style={{ background: "var(--bg-card)", borderRadius: 12, padding: 28, width: "100%", maxWidth: 440, border: `1px solid var(--line)`, maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>⟳ Cross-device sync</div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "var(--muted)" }}>✕</button>
@@ -1690,13 +1696,33 @@ function SyncSetupModal({ onClose, onSaved }) {
         <div style={{ fontSize: 13, color: "var(--sub)", lineHeight: 1.7, marginBottom: 20 }}>
           Sync uses a <strong>private GitHub Gist</strong> as your database — your data lives in your own GitHub account and syncs automatically across all devices.
         </div>
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--sub)", marginBottom: 6 }}>GitHub Personal Access Token</div>
+
+        <div style={labelStyle}>GitHub Personal Access Token</div>
         <input
-          style={{ ...g.formInput, marginBottom: 8, fontSize: 12, fontFamily: "monospace" }}
+          style={{ ...g.formInput, marginBottom: 16, fontSize: 12, fontFamily: "monospace" }}
           type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
           value={token} onChange={(e) => setToken(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && save()}
         />
+
+        <div style={labelStyle}>
+          Gist ID <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>— leave blank to auto-create; paste from another device to share</span>
+        </div>
+        <input
+          style={{ ...g.formInput, marginBottom: 4, fontSize: 12, fontFamily: "monospace" }}
+          type="text" placeholder="e.g. a1b2c3d4e5f6…"
+          value={gistId} onChange={(e) => setGistId(e.target.value)}
+        />
+        {storedId && (
+          <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 14, display: "flex", gap: 8, alignItems: "center" }}>
+            <span>Current:</span>
+            <code style={{ fontSize: 11, background: "var(--bg)", padding: "1px 6px", borderRadius: 4, userSelect: "all" }}>{storedId}</code>
+            <a href={`https://gist.github.com/${storedId}`} target="_blank" rel="noopener"
+              style={{ color: BCG.blue400, fontSize: 11, textDecoration: "none" }}>view ↗</a>
+          </div>
+        )}
+        {!storedId && <div style={{ marginBottom: 14 }} />}
+
         {status && <div style={{ fontSize: 12, color: status.startsWith("✓") ? BCG.green400 : BCG.red300, marginBottom: 10 }}>{status}</div>}
         <button
           style={{ ...g.btnBlue, width: "100%", padding: "9px 16px", fontSize: 13, opacity: testing || !token.trim() ? 0.5 : 1, marginBottom: 10 }}
@@ -1704,12 +1730,17 @@ function SyncSetupModal({ onClose, onSaved }) {
           {testing ? "Verifying…" : "Connect & enable sync →"}
         </button>
         {getGistToken() && <button onClick={disconnect} style={{ ...g.btn, width: "100%", fontSize: 12, color: "var(--muted)" }}>Disconnect sync</button>}
-        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 14, lineHeight: 1.7, borderTop: `1px solid var(--line)`, paddingTop: 14 }}>
-          <strong>How to get a token:</strong><br />
+
+        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 14, lineHeight: 1.8, borderTop: `1px solid var(--line)`, paddingTop: 14 }}>
+          <strong>First time setup:</strong><br />
           1. Go to <strong>github.com/settings/tokens</strong><br />
           2. Click <strong>"Generate new token (classic)"</strong><br />
           3. Give it any name, check only the <strong>"gist"</strong> scope<br />
-          4. Copy and paste the token above
+          4. Paste token above → leave Gist ID blank → Connect<br />
+          5. A Gist is auto-created; copy its ID from here to other devices<br />
+          <br />
+          <strong>Adding a second device:</strong><br />
+          Enter the same token + paste the Gist ID from your first device.
         </div>
       </div>
     </div>
