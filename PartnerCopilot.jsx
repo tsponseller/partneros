@@ -317,32 +317,6 @@ function Dots() {
 function Header({ ctx, dark, onToggleDark, syncStatus, onOpenSync }) {
   const pColor = ctx.paceStatus === "BEHIND_PACE" ? BCG.red300 : ctx.paceStatus === "ON_PACE" ? BCG.orange400 : BCG.green400;
   const gap = Math.max(0, MDP_TARGET - ctx.ytdWonRaw - ctx.weightedRaw);
-  const importRef = useRef(null);
-
-  const exportData = () => {
-    const keys = ["pc:deals", "pc:contacts", "pc:apiKey", "pc:dark"];
-    const data = {};
-    keys.forEach((k) => { const v = localStorage.getItem(k); if (v) data[k] = v; });
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `partneros-${new Date().toISOString().split("T")[0]}.json`;
-    a.click();
-  };
-
-  const importData = (file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-        Object.entries(data).forEach(([k, v]) => localStorage.setItem(k, v));
-        window.location.reload();
-      } catch { alert("Invalid backup file — please export again from the source device."); }
-    };
-    reader.readAsText(file);
-  };
-
   const btnStyle = { background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, padding: "3px 9px", cursor: "pointer", fontSize: 11, color: BCG.white, fontFamily: "inherit", letterSpacing: "0.03em" };
 
   return (
@@ -358,9 +332,6 @@ function Header({ ctx, dark, onToggleDark, syncStatus, onOpenSync }) {
               {syncStatus === "syncing" ? "⟳ Syncing…" : syncStatus === "error" ? "⚠ Sync error" : "✓ Synced"}
             </span>
           )}
-          <button onClick={exportData} style={btnStyle} title="Export all data to a file">↑ Export</button>
-          <button onClick={() => importRef.current?.click()} style={btnStyle} title="Import data from a file">↓ Import</button>
-          <input ref={importRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => importData(e.target.files?.[0])} />
           <button onClick={onOpenSync} style={{ ...btnStyle, fontSize: 13 }} title={getGistToken() ? "Sync settings" : "Set up cross-device sync"}>
             {getGistToken() ? "⟳" : "⟳?"}
           </button>

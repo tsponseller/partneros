@@ -45,7 +45,7 @@
         "'recharts'":           "'https://esm.sh/recharts'",
       };
 
-      let src = await fetch('./PartnerCopilot.jsx').then(r => r.text());
+      let src = await fetch('./PartnerCopilot.jsx?v=' + Date.now()).then(r => r.text());
       for (const [bare, cdn] of Object.entries(ESM)) src = src.replaceAll(bare, cdn);
 
       const { code } = Babel.transform(src, {
