@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trevor Sponseller</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #197A56;
+      --green-dark: #0E3E1B;
+      --green-light: #21BF61;
+      --bg: #F8F6F3;
+      --card: #FFFFFF;
+      --text: #1a1a1a;
+      --muted: #666;
+      --border: #E0D8D0;
+      --header-bg: #111;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────── */
+    header {
+      background: var(--header-bg);
+      color: #fff;
+      padding: 80px 40px 72px;
+    }
+    .header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--green-light);
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+      margin-bottom: 24px;
+    }
+    .tagline {
+      font-size: clamp(15px, 2vw, 18px);
+      color: #aaa;
+      max-width: 560px;
+      line-height: 1.65;
+      margin-bottom: 36px;
+    }
+    .header-links {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .header-links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #ccc;
+      text-decoration: none;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 7px 14px;
+      transition: all 0.15s;
+    }
+    .header-links a:hover { color: #fff; border-color: #666; background: #1a1a1a; }
+
+    /* ── MAIN ───────────────────────────────────────────────── */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 64px 40px 96px;
+    }
+
+    section { margin-bottom: 72px; }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 28px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── ABOUT ──────────────────────────────────────────────── */
+    .about-text {
+      font-size: 16px;
+      color: #333;
+      max-width: 680px;
+      line-height: 1.75;
+    }
+    .about-text p { margin-bottom: 16px; }
+    .about-text p:last-child { margin-bottom: 0; }
+
+    .focus-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+    .tag {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--green-dark);
+      background: #DCF9E3;
+      border-radius: 20px;
+      padding: 4px 12px;
+    }
+
+    /* ── CARDS ──────────────────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow 0.15s, transform 0.15s;
+      cursor: pointer;
+    }
+    .card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
+
+    .card-type {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 12px;
+    }
+    .card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .card p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      flex: 1;
+      margin-bottom: 20px;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #aaa;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      margin-top: auto;
+    }
+    .card-arrow {
+      font-size: 14px;
+      color: var(--green);
+    }
+    .card-disabled {
+      opacity: 0.45;
+      cursor: default;
+      pointer-events: none;
+    }
+    .card-coming-soon {
+      font-size: 11px;
+      color: #aaa;
+      font-style: italic;
+    }
+
+    /* ── PARTNER OS CARD ────────────────────────────────────── */
+    .card-os {
+      background: var(--header-bg);
+      border-color: #2a2a2a;
+      color: #fff;
+    }
+    .card-os .card-type { color: var(--green-light); }
+    .card-os h3 { color: #fff; }
+    .card-os p { color: #888; }
+    .card-os .card-footer { border-color: #2a2a2a; color: #555; }
+    .card-os .card-arrow { color: var(--green-light); }
+    .lock-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #555;
+      border: 1px solid #2a2a2a;
+      border-radius: 20px;
+      padding: 3px 10px;
+    }
+
+    /* ── PASSWORD MODAL ─────────────────────────────────────── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 360px;
+      color: #fff;
+    }
+    .modal h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+    .modal-sub {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 28px;
+    }
+    .modal input[type="password"] {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: #fff;
+      font-family: inherit;
+      outline: none;
+      margin-bottom: 12px;
+      transition: border-color 0.15s;
+    }
+    .modal input[type="password"]:focus { border-color: var(--green); }
+    .modal input[type="password"].error { border-color: #e05252; }
+    .modal-error {
+      font-size: 12px;
+      color: #e05252;
+      margin-bottom: 12px;
+      min-height: 18px;
+    }
+    .modal-btn {
+      width: 100%;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .modal-btn:hover { background: #1a9062; }
+    .modal-cancel {
+      width: 100%;
+      background: none;
+      color: #555;
+      border: none;
+      padding: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+    .modal-cancel:hover { color: #888; }
+
+    /* ── FOOTER ─────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 40px;
+      text-align: center;
+      font-size: 12px;
+      color: #aaa;
+    }
+    footer a { color: var(--green); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      header { padding: 56px 24px 48px; }
+      main { padding: 48px 24px 64px; }
+      footer { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="eyebrow">BCG Partner · New York</div>
+      <h1>Trevor<br>Sponseller</h1>
+      <p class="tagline">I help brands and platforms find growth at the intersection of AI, media, and the modern marketing stack.</p>
+      <div class="header-links">
+        <a href="https://www.linkedin.com/in/trevorsponseller" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          LinkedIn
+        </a>
+        <a href="https://www.bcg.com/about/people/experts/trevor-sponseller" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          BCG Profile
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ABOUT -->
+    <section>
+      <div class="section-label">About</div>
+      <div class="about-text">
+        <p>I'm a Partner at Boston Consulting Group focused on helping consumer brands and media platforms drive growth through AI-enabled marketing transformation. My work sits at the intersection of strategy and activation — turning commercial ambition into measurable results.</p>
+        <p>I work with CMOs and CCOs at leading consumer and technology companies to reimagine how marketing, content, and technology create sustainable competitive advantage. I'm particularly focused on the creator economy, AI-powered content supply chains, and the collapse of the traditional marketing funnel.</p>
+      </div>
+      <div class="focus-tags">
+        <span class="tag">AI in Marketing</span>
+        <span class="tag">Creator Economy</span>
+        <span class="tag">Content Supply Chain</span>
+        <span class="tag">Go-to-Market Strategy</span>
+        <span class="tag">CMO Advisory</span>
+        <span class="tag">Omnichannel Growth</span>
+      </div>
+    </section>
+
+    <!-- WRITING -->
+    <section>
+      <div class="section-label">Writing &amp; Thought Leadership</div>
+      <div class="card-grid">
+
+        <a class="card" href="https://www.bcg.com/publications/2025/move-beyond-the-linear-funnel" target="_blank" rel="noopener">
+          <div class="card-type">BCG Article · 2025</div>
+          <h3>Move Beyond the Linear Funnel</h3>
+          <p>Why the awareness-to-conversion model is broken — and how brands can build a more adaptive, always-on growth engine.</p>
+          <div class="card-footer">
+            <span>Boston Consulting Group</span>
+            <span class="card-arrow">↗</span>
+          </div>
+        </a>
+
+        <div class="card card-disabled">
+          <div class="card-type">BCG Article · 2024</div>
+          <h3>The Creator Economy Is a Distribution Strategy</h3>
+          <p>Brands that treat creators as media channels will lose. Here's how to build creator partnerships that compound over time.</p>
+          <div class="card-footer">
+            <span>Boston Consulting Group</span>
+            <span class="card-coming-soon">Coming soon</span>
+          </div>
+        </div>
+
+        <div class="card card-disabled">
+          <div class="card-type">BCG Article · 2024</div>
+          <h3>AI and the Content Supply Chain</h3>
+          <p>Generative AI is collapsing the cost of content production. The question isn't whether to use it — it's how to preserve brand signal at scale.</p>
+          <div class="card-footer">
+            <span>Boston Consulting Group</span>
+            <span class="card-coming-soon">Coming soon</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TOOLS -->
+    <section>
+      <div class="section-label">Tools</div>
+      <div class="card-grid">
+
+        <div class="card card-os" id="partnerios-tile" onclick="openModal()">
+          <div class="card-type">Internal Tool</div>
+          <h3>PartnerOS</h3>
+          <p>AI-powered operating system for BCG commercial execution. Pipeline tracking, relationship intelligence, and weekly coaching — built for the MDP election sprint.</p>
+          <div class="card-footer">
+            <span class="lock-badge">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Private
+            </span>
+            <span class="card-arrow">→</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>© 2025 Trevor Sponseller &nbsp;·&nbsp; <a href="https://www.linkedin.com/in/trevorsponseller" target="_blank" rel="noopener">LinkedIn</a> &nbsp;·&nbsp; <a href="https://www.bcg.com/about/people/experts/trevor-sponseller" target="_blank" rel="noopener">BCG</a></p>
+  </footer>
+
+  <!-- PASSWORD MODAL -->
+  <div class="modal-backdrop" id="modal">
+    <div class="modal">
+      <h2>PartnerOS</h2>
+      <p class="modal-sub">Enter your access password to continue.</p>
+      <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()" />
+      <div class="modal-error" id="pw-error"></div>
+      <button class="modal-btn" onclick="checkPw()">Access PartnerOS →</button>
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    const APP_URL = 'app.html';
+    const PW_HASH = btoa('Datais1987'); // simple obfuscation — not cryptographic
+
+    function openModal() {
+      document.getElementById('modal').classList.add('open');
+      setTimeout(() => document.getElementById('pw-input').focus(), 50);
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('open');
+      document.getElementById('pw-input').value = '';
+      document.getElementById('pw-error').textContent = '';
+      document.getElementById('pw-input').classList.remove('error');
+    }
+
+    function checkPw() {
+      const val = document.getElementById('pw-input').value;
+      if (btoa(val) === PW_HASH) {
+        localStorage.setItem('ps_granted', 'true');
+        window.location.href = APP_URL;
+      } else {
+        const input = document.getElementById('pw-input');
+        const err = document.getElementById('pw-error');
+        input.classList.add('error');
+        err.textContent = 'Incorrect password.';
+        input.value = '';
+        setTimeout(() => { input.classList.remove('error'); err.textContent = ''; }, 2500);
+      }
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+  </script>
+
+</body>
+</html>

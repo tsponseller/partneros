@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Partner Copilot</title>
+    <!-- NOTE: This CDN/Babel entry is for the PowerShell dev server (no Node.js).
+         Once Node.js is installed, replace this file's contents with the 5-line
+         Vite entry in index.vite.html and run: npm install && npm run dev -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>* { box-sizing: border-box; margin: 0; padding: 0; } body { background: #F1EEEA; }</style>
+  </head>
+  <body>
+    <script>
+      // Password gate — redirect to landing if not authenticated
+      if (localStorage.getItem('ps_granted') !== 'true') {
+        window.location.replace('index.html');
+      }
+    </script>
+    <div id="root"></div>
+    <script type="module">
+      // window.storage polyfill
+      window.storage = {
+        get: (key) => {
+          const val = localStorage.getItem(key);
+          if (val === null) return Promise.reject(new Error("not found"));
+          return Promise.resolve({ value: val });
+        },
+        set: (key, value) => { localStorage.setItem(key, value); return Promise.resolve(); },
+        delete: (key) => { localStorage.removeItem(key); return Promise.resolve(); },
+      };
+
+      const ESM = {
+        '"react"':              '"https://esm.sh/react@18"',
+        "'react'":              "'https://esm.sh/react@18'",
+        '"react/jsx-runtime"':  '"https://esm.sh/react@18/jsx-runtime"',
+        "'react/jsx-runtime'":  "'https://esm.sh/react@18/jsx-runtime'",
+        '"react-dom"':          '"https://esm.sh/react-dom@18"',
+        "'react-dom'":          "'https://esm.sh/react-dom@18'",
+        '"react-dom/client"':   '"https://esm.sh/react-dom@18/client"',
+        "'react-dom/client'":   "'https://esm.sh/react-dom@18/client'",
+        '"lucide-react"':       '"https://esm.sh/lucide-react"',
+        "'lucide-react'":       "'https://esm.sh/lucide-react'",
+        '"recharts"':           '"https://esm.sh/recharts"',
+        "'recharts'":           "'https://esm.sh/recharts'",
+      };
+
+      let src = await fetch('./PartnerCopilot.jsx').then(r => r.text());
+      for (const [bare, cdn] of Object.entries(ESM)) src = src.replaceAll(bare, cdn);
+
+      const { code } = Babel.transform(src, {
+        presets: [['react', { runtime: 'automatic', importSource: 'https://esm.sh/react@18' }]],
+        filename: 'PartnerCopilot.jsx',
+      });
+
+      const blob = new Blob([code], { type: 'text/javascript' });
+      const mod = await import(URL.createObjectURL(blob));
+
+      const { createRoot } = await import('https://esm.sh/react-dom@18/client');
+      const { createElement } = await import('https://esm.sh/react@18');
+      createRoot(document.getElementById('root')).render(createElement(mod.default));
+    </script>
+  </body>
+</html>
